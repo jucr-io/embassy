@@ -80,7 +80,9 @@ async fn main(spawner: Spawner) -> ! {
     let mac_addr = [0x02, 234, 3, 4, 82, 231];
     static STATE: StaticCell<State<2, 2>> = StaticCell::new();
     let state = STATE.init(State::<2, 2>::new());
-    let (device, runner) = embassy_net_wiznet::new(mac_addr, state, spi, w5500_int, w5500_reset).await;
+    let (device, runner) = embassy_net_wiznet::new(mac_addr, state, spi, w5500_int, w5500_reset)
+        .await
+        .unwrap();
     unwrap!(spawner.spawn(ethernet_task(runner)));
 
     let config = embassy_net::Config::dhcpv4(Default::default());
@@ -91,13 +93,8 @@ async fn main(spawner: Spawner) -> ! {
     //});
 
     static STACK: StaticCell<Stack<Device>> = StaticCell::new();
-    static RESOURCES: StaticCell<StackResources<2>> = StaticCell::new();
-    let stack = &*STACK.init(Stack::new(
-        device,
-        config,
-        RESOURCES.init(StackResources::<2>::new()),
-        seed,
-    ));
+    static RESOURCES: StaticCell<StackResources<3>> = StaticCell::new();
+    let stack = &*STACK.init(Stack::new(device, config, RESOURCES.init(StackResources::new()), seed));
 
     // Launch network task
     unwrap!(spawner.spawn(net_task(stack)));
